@@ -79,6 +79,8 @@ class Day:
     satisfaction: Optional[int] = None  # 1-4 rating
     notes: str = ""
     created_at: datetime = field(default_factory=datetime.now)
+    started_at: Optional[datetime] = None  # When workday started
+    ended_at: Optional[datetime] = None  # When workday ended
     tasks: list[Task] = field(default_factory=list)
     pomodoros: list[Pomodoro] = field(default_factory=list)
 
@@ -95,7 +97,26 @@ class Day:
             satisfaction=row[6],
             notes=row[7] or "",
             created_at=datetime.fromisoformat(row[8]) if row[8] else datetime.now(),
+            started_at=datetime.fromisoformat(row[9]) if len(row) > 9 and row[9] else None,
+            ended_at=datetime.fromisoformat(row[10]) if len(row) > 10 and row[10] else None,
         )
+
+    def duration_seconds(self) -> Optional[int]:
+        """Calculate workday duration in seconds."""
+        if self.started_at and self.ended_at:
+            return int((self.ended_at - self.started_at).total_seconds())
+        return None
+
+    def duration_formatted(self) -> Optional[str]:
+        """Get formatted duration string (e.g., '4h 32m')."""
+        seconds = self.duration_seconds()
+        if seconds is None:
+            return None
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        if hours > 0:
+            return f"{hours}h {minutes}m"
+        return f"{minutes}m"
 
 
 @dataclass

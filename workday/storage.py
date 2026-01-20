@@ -20,7 +20,9 @@ CREATE TABLE IF NOT EXISTS days (
     rest_breaks INTEGER DEFAULT 0,
     satisfaction INTEGER,
     notes TEXT,
-    created_at TEXT
+    created_at TEXT,
+    started_at TEXT,
+    ended_at TEXT
 );
 
 -- Tasks for each day
@@ -82,6 +84,13 @@ class Storage:
                     "INSERT INTO streaks (current_streak, longest_streak, last_active_date) "
                     "VALUES (0, 0, '')"
                 )
+            # Migration: add started_at and ended_at columns if missing
+            cursor = conn.execute("PRAGMA table_info(days)")
+            columns = [row[1] for row in cursor.fetchall()]
+            if "started_at" not in columns:
+                conn.execute("ALTER TABLE days ADD COLUMN started_at TEXT")
+            if "ended_at" not in columns:
+                conn.execute("ALTER TABLE days ADD COLUMN ended_at TEXT")
 
     @contextmanager
     def _connection(self) -> Iterator[sqlite3.Connection]:
@@ -109,8 +118,9 @@ class Storage:
             cursor = conn.execute(
                 """
                 INSERT INTO days (date, planned_pomodoros, actual_pomodoros,
-                                  email_breaks, rest_breaks, satisfaction, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                  email_breaks, rest_breaks, satisfaction, notes, created_at,
+                                  started_at, ended_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     day.date,
@@ -121,6 +131,8 @@ class Storage:
                     day.satisfaction,
                     day.notes,
                     day.created_at.isoformat(),
+                    day.started_at.isoformat() if day.started_at else None,
+                    day.ended_at.isoformat() if day.ended_at else None,
                 ),
             )
             day.id = cursor.lastrowid
@@ -190,7 +202,9 @@ class Storage:
                     email_breaks = ?,
                     rest_breaks = ?,
                     satisfaction = ?,
-                    notes = ?
+                    notes = ?,
+                    started_at = ?,
+                    ended_at = ?
                 WHERE id = ?
                 """,
                 (
@@ -200,6 +214,8 @@ class Storage:
                     day.rest_breaks,
                     day.satisfaction,
                     day.notes,
+                    day.started_at.isoformat() if day.started_at else None,
+                    day.ended_at.isoformat() if day.ended_at else None,
                     day.id,
                 ),
             )

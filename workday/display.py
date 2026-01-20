@@ -242,6 +242,13 @@ def print_day_summary(day: Day, streak: Streak) -> None:
     """
     print_header(f"Day Complete - {day.date}")
 
+    # Duration
+    duration = day.duration_formatted()
+    if duration:
+        click.echo(f"\nWorkday duration: {duration}")
+        if day.started_at and day.ended_at:
+            click.echo(f"  {day.started_at.strftime('%H:%M')} - {day.ended_at.strftime('%H:%M')}")
+
     # Pomodoros
     completed = day.actual_pomodoros
     planned = day.planned_pomodoros

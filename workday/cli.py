@@ -191,6 +191,7 @@ def start(ctx: click.Context) -> None:
     )
 
     today.planned_pomodoros = planned
+    today.started_at = datetime.now()  # Record when workday planning started
     storage.update_day(today)
 
     # Reload day with tasks
@@ -457,8 +458,9 @@ def done(ctx: click.Context) -> None:
         click.echo("No workday to complete.")
         return
 
-    # Update pomodoro count
+    # Update pomodoro count and end time
     today.actual_pomodoros = storage.get_completed_pomodoro_count(today.id)
+    today.ended_at = datetime.now()  # Record when workday ended
 
     # Ask for satisfaction rating
     click.echo("\nHow satisfied are you with today's work?")
@@ -554,6 +556,9 @@ def history(ctx: click.Context, days: int) -> None:
 
     for day in recent:
         click.echo(f"\n{day.date}")
+        duration = day.duration_formatted()
+        if duration:
+            click.echo(f"  Duration: {duration}")
         click.echo(f"  Pomodoros: {day.actual_pomodoros}/{day.planned_pomodoros}")
         click.echo(f"  Breaks: {day.email_breaks} email, {day.rest_breaks} rest")
         if day.satisfaction:
